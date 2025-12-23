@@ -1,6 +1,8 @@
 const express = require('express');
 const db = require('./config/database');
 const user = require('./models/user'); 
+const transaction = require('./models/transaction');
+
 // const AccessLevel = require('./models/AccessLevel'); // Se já tiver criado o outro
 
 const app = express();

@@ -12,7 +12,7 @@ const User = db.define('User', {
     unique: true,
     validate: { isEmail: true }
   },
-  password_hash: {
+  passwordHash: {
     type: DataTypes.STRING,
     allowNull: false,
   }
