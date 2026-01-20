@@ -2,7 +2,7 @@ const { DataTypes } = require('sequelize');
 const db = require('../config/database');
 const User = require('./user'); // Importamos o User para criar a relação
 
-const Transaction = db.define('Transaction', {
+const Transactions = db.define('Transactions', {
   id_transaction: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -37,13 +37,6 @@ const Transaction = db.define('Transaction', {
   }
 }, {
   underscored: true,
-  tableName: 'transactions'
 });
 
-// --- ASSOCIAÇÃO (A Chave Estrangeira do diagrama) ---
-// Um Usuário tem muitas Transações
-User.hasMany(Transaction, { foreignKey: 'id_user' });
-// Uma Transação pertence a um Usuário
-Transaction.belongsTo(User, { foreignKey: 'id_user' });
-
-module.exports = Transaction;
+module.exports = Transactions;

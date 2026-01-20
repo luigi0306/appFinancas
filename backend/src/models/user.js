@@ -1,7 +1,12 @@
 const { DataTypes } = require('sequelize');
 const db = require('../config/database'); // Sua conexão configurada anteriormente
 
-const User = db.define('User', {
+const Users = db.define('Users', {
+  id_user: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
   name: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -17,5 +22,7 @@ const User = db.define('User', {
     allowNull: false,
   }
 }, {
-  underscored: true // Isso transforma password_hash em password_hash no MySQL automaticamente
+  underscored: true // Isso transforma passwordHash em password_hash no MySQL automaticamente
 });
+
+module.exports = Users;
