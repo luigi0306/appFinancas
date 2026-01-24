@@ -5,6 +5,7 @@ const Transactions = require('./models/transaction');
 const Library_acesses = require('./models/library_acess');
 const seedDatabase = require('./database/seeders'); // Importe o seeder
 const UserController = require('./controllers/UserController');
+const TransactionController = require('./controllers/TransactionController');
 
 console.log('TESTE:', Library_acesses);
 
@@ -15,7 +16,9 @@ app.use(express.json());
 // Rotas
 app.post('/users', UserController.store);
 app.post('/login', UserController.login);
-
+app.post('/transactions', TransactionController.store);
+app.get('/transactions/:id_user', TransactionController.index);
+app.delete('/transactions/:id_transaction', TransactionController.delete);
 
 // Relacionamentos
 Library_acesses.hasMany(Users, { foreignKey: 'id_type_acess' });
