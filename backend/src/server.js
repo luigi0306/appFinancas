@@ -7,8 +7,6 @@ const seedDatabase = require('./database/seeders'); // Importe o seeder
 const UserController = require('./controllers/UserController');
 const TransactionController = require('./controllers/TransactionController');
 
-console.log('TESTE:', Library_acesses);
-
 const app = express();
 app.use(express.json());
 
@@ -19,20 +17,32 @@ app.post('/login', UserController.login);
 app.post('/transactions', TransactionController.store);
 app.get('/transactions/:id_user', TransactionController.index);
 app.delete('/transactions/:id_transaction', TransactionController.delete);
+app.get('/transactions/balance/:id_user', TransactionController.getBalance);
+
 
 // Relacionamentos
-Library_acesses.hasMany(Users, { foreignKey: 'id_type_acess' });
+Library_acesses.hasMany(Users, { 
+  foreignKey: 'id_type_acess',
+  constraints: true,
+  foreignKeyConstraint: true 
+});
+
 // Uma Usuario pertence a um Tipo de Acesso
 Users.belongsTo(Library_acesses, { foreignKey: 'id_type_acess' });
 
 // Um Usuário tem muitas Transações
-Users.hasMany(Transactions, { foreignKey: 'id_user' });
+Users.hasMany(Transactions, { 
+  foreignKey: 'id_user',
+  constraints: true,
+  foreignKeyConstraint: true 
+});
+
 // Uma Transação pertence a um Usuário
 Transactions.belongsTo(Users, { foreignKey: 'id_user' });
 
+
 // Sincronizar o Banco de Dados
-// O { alter: true } atualiza a tabela se você adicionar colunas depois
-db.sync({ alter: true })
+db.sync({})
   .then(async () => {
     console.log('📂 Tabelas sincronizadas');
 
