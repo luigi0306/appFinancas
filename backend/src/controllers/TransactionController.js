@@ -166,7 +166,6 @@ module.exports = {
                     acc.outcome += value;
                 }
 
-
                 // --- LÓGICA DAS DESCRIÇÕES ---
                 // Adicionamos um objeto com os detalhes deste item no nosso array de itens
                 acc.items.push({

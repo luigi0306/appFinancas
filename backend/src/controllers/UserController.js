@@ -1,5 +1,8 @@
 const User = require('../models/user');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+const SECRET_KEY = process.env.JWT_SECRET;
 
 module.exports = {
     async store(req, res) {
@@ -14,7 +17,7 @@ module.exports = {
             const user = await User.create({
                 name,
                 email,
-                passwordHash, // O Sequelize vai transformar em password_hash no banco
+                passwordHash,
                 id_type_acess
             });
 
@@ -23,6 +26,7 @@ module.exports = {
                 user: { id: user.id_user, name: user.name, email: user.email }
             });
         } catch (error) {
+            console.error(error);
             return res.status(400).json({ error: "Erro ao criar usuário. Verifique se o e-mail já existe." });
         }
     },
@@ -31,25 +35,40 @@ module.exports = {
         try {
             const { email, password } = req.body;
 
+            // Busca o usuário pelo e-mail
             const user = await User.findOne({ where: { email } });
 
             if (!user) {
-                return res.status(401).json({ error: "Usuário não encontrado." });
+                return res.status(401).json({ error: "E-mail ou senha inválidos." });
             }
 
+            // Compara a senha digitada com o Hash do banco
             const passwordMatch = await bcrypt.compare(password, user.passwordHash);
 
             if (!passwordMatch) {
-                return res.status(401).json({ error: "Senha incorreta." });
+                return res.status(401).json({ error: "E-mail ou senha inválidos." });
             }
+
+            // --- GERAÇÃO DO JWT ---
+            // Guardamos o ID e o e-mail dentro do Token
+            const token = jwt.sign(
+                { id: user.id_user, email: user.email },
+                SECRET_KEY,
+                { expiresIn: '1d' } // Expira em 24 horas
+            );
 
             return res.json({
                 message: "Login realizado com sucesso!",
-                user: { id: user.id_user, name: user.name, email: user.email }
+                user: {
+                    id: user.id_user,
+                    name: user.name
+                },
+                token: token // O APIDog vai receber essa chave aqui
             });
+
         } catch (error) {
-            return res.status(500).json({ error: "Erro ao realizar login." });
+            console.error(error);
+            return res.status(500).json({ error: "Erro interno ao realizar login." });
         }
     }
-
 };
