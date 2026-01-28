@@ -6,13 +6,19 @@ module.exports = {
     async delete(req, res) {
         try {
             const { id_transaction } = req.params;
+            const id_user = req.userId; // Pegamos o ID do dono do Token
 
-            // Executa a deleção
-            const rowsDeleted = await Transaction.destroy({ where: { id_transaction } });
+            // Agora a deleção só ocorre se o ID da transação pertencer ao Usuário logado
+            const rowsDeleted = await Transaction.destroy({
+                where: {
+                    id_transaction,
+                    id_user // <--- A trava de segurança está aqui!
+                }
+            });
 
-            // Engenharia Preventiva: Verifica se algo foi realmente deletado
             if (rowsDeleted === 0) {
-                return res.status(404).json({ error: "Transação não encontrada." });
+                // Se cair aqui, ou a transação não existe, ou ela pertence a OUTRO usuário
+                return res.status(404).json({ error: "Transação não encontrada ou permissão negada." });
             }
 
             return res.status(200).json({
@@ -25,7 +31,7 @@ module.exports = {
 
     async index(req, res) {
         try {
-            const { id_user } = req.params;
+            const id_user = req.userId;
 
             const transactions = await Transaction.findAll({
                 where: { id_user },
@@ -44,7 +50,9 @@ module.exports = {
 
     async store(req, res) {
         try {
-            const { type_transaction, value, category, description, date, id_user } = req.body;
+            const { type_transaction, value, category, description, date } = req.body;
+
+            const id_user = req.userId;
 
             const transaction = await Transaction.create({
                 type_transaction,
@@ -66,7 +74,7 @@ module.exports = {
 
     async getBalance(req, res) {
         try {
-            const { id_user } = req.params;
+            const id_user = req.userId;
             const { startDate, endDate } = req.query; // Datas vêm pela Query String
 
             // Criamos um objeto de filtro básico
@@ -124,7 +132,7 @@ module.exports = {
 
     async getCategoryReport(req, res) {
         try {
-            const { id_user } = req.params;
+            const id_user = req.userId;
             const { startDate, endDate, category, type_transaction } = req.query;
 
             // Criamos um objeto de filtro básico
