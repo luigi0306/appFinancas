@@ -1,4 +1,5 @@
 const User = require('../models/user');
+const LibraryAcess = require('../models/library_acess');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
@@ -34,7 +35,9 @@ module.exports = {
     async login(req, res) {
         try {
             const { email, password } = req.body;
-
+            console.log("Tentativa de login para:", email);
+            console.log("Senha digitada:", password);
+            
             // Busca o usuário pelo e-mail
             const user = await User.findOne({ where: { email } });
 
@@ -69,6 +72,30 @@ module.exports = {
         } catch (error) {
             console.error(error);
             return res.status(500).json({ error: "Erro interno ao realizar login." });
+        }
+    },
+
+    async getProfile(req, res) {
+        try {
+            const id_user = req.userId;
+
+            // O findByPk busca pela Chave Primária, é o SELECT mais rápido que existe
+            const user = await User.findByPk(id_user, {
+                include: { 
+                    model: LibraryAcess, // Nome do modelo do seu Tipo de Acesso
+                    attributes: ['type_acess'] // Pegamos apenas o nome do cargo/acesso
+                },
+                attributes: ['id_user', 'name', 'email'] // Evitamos trazer o Hash da senha
+            });
+
+            if (!user) {
+                return res.status(404).json({ error: "Usuário não encontrado." });
+            }
+
+            return res.status(200).json(user);
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({ error: "Erro interno ao buscar perfil." });
         }
     }
 };
