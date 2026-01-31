@@ -90,14 +90,13 @@ module.exports = {
             // 1. Busca as transações no banco
             const transactions = await Transaction.findAll({ where: whereCondition });
 
-            // 2. Se o array estiver vazio, podemos avisar que não há dados ou retornar saldo zero
-            // Aqui, optei por retornar saldo zero, que é o padrão de apps financeiros
-            if (transactions.length === 0) {
-                return res.status(200).json({
-                    id_user,
-                    message: "Nenhuma transação encontrada para este usuário."
-                });
-            }
+            // LOGICA ANTIGA QUE JA RETORNAVA CASO NAO ENCONTRE NENHUMA TRANSAÇÃO
+            // if (transactions.length === 0) {
+            //     return res.status(200).json({
+            //         id_user,
+            //         message: "Nenhuma transação encontrada para este usuário."
+            //     });
+            // }
 
             // 3. Executa o cálculo (Reduce)
             const balance = transactions.reduce((acc, item) => {
@@ -120,7 +119,9 @@ module.exports = {
                 endDate: endDate,
                 income: balance.income.toFixed(2),
                 outcome: balance.outcome.toFixed(2),
-                total: balance.total.toFixed(2)
+                total: balance.total.toFixed(2),
+                //NOVA LOGICA QUE RETORNA 0 CASO NAO ENCONTRE NENHUMA TRANSAÇÃO:
+                count: transactions.length
             });
 
         } catch (error) {

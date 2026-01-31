@@ -37,9 +37,15 @@ module.exports = {
             const { email, password } = req.body;
             console.log("Tentativa de login para:", email);
             console.log("Senha digitada:", password);
-            
+
             // Busca o usuário pelo e-mail
-            const user = await User.findOne({ where: { email } });
+            const user = await User.findOne({
+                where: { email },
+                include: [{
+                    model: LibraryAcess, // Faz o JOIN com essa tabela
+                    attributes: ['type_acess']
+                }]
+            });
 
             if (!user) {
                 return res.status(401).json({ error: "E-mail ou senha inválidos." });
@@ -64,7 +70,13 @@ module.exports = {
                 message: "Login realizado com sucesso!",
                 user: {
                     id: user.id_user,
-                    name: user.name
+                    name: user.name,
+                    email: user.email,
+                    //id tipo acesso:
+                    id_type_acess: user.id_type_acess,
+                    //role -> nome do tipo de acesso (usuario, admin, Desenvolvedor):
+                    role: user.Library_acess?.type_acess || 'Usuário',
+                    createdAt: user.createdAt
                 },
                 token: token // O APIDog vai receber essa chave aqui
             });
@@ -81,7 +93,7 @@ module.exports = {
 
             // O findByPk busca pela Chave Primária, é o SELECT mais rápido que existe
             const user = await User.findByPk(id_user, {
-                include: { 
+                include: {
                     model: LibraryAcess, // Nome do modelo do seu Tipo de Acesso
                     attributes: ['type_acess'] // Pegamos apenas o nome do cargo/acesso
                 },

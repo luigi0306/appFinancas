@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../services/api';
 
-export default function Login() {
+export default function Login( { onSignIn } ) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
@@ -15,7 +16,16 @@ export default function Login() {
             });
 
             const { token, user } = response.data;
-            Alert.alert('Sucesso', `Bem-vindo, ${user.name}!`);
+
+            await AsyncStorage.setItem('@MyFinance:token', token);
+            await AsyncStorage.setItem('@MyFinance:user', JSON.stringify(user));
+
+            api.defaults.headers.authorization = `Bearer ${token}`;
+
+            onSignIn(user);
+
+            Alert.alert('Login Salvo!', `Token guardado com sucesso.`);
+            console.log("Token salvo no dispositivo:", token);
 
         } catch (error) {
             // Se der erro de rede, o log vai nos dizer o motivo exato agora

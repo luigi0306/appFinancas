@@ -1,10 +1,10 @@
-require('dotenv').config(); 
+require('dotenv').config();
 const express = require('express');
 const db = require('./config/database');
 const seedDatabase = require('./database/seeders'); // Importe o seeder
 const cors = require('cors');
 
-require('./models/associations'); 
+require('./models/associations');
 
 //declarando rotas
 const userRoutes = require('./routes/userRoutes');
