@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import api from '../services/api';
 
-export default function Dashboard({ user, onLogout, onProfile }) {
+export default function Dashboard({ user, onLogout, onProfile, onTransaction, onGetTransactions }) {
     const [balance, setBalance] = useState({ income: '0.00', outcome: '0.00', total: '0.00' });
     const [loading, setLoading] = useState(true);
 
@@ -75,8 +75,9 @@ export default function Dashboard({ user, onLogout, onProfile }) {
                 </View>
 
             ) : (
-
-                // OPÇÃO B: DASHBOARD PADRÃO (Usuário Ativo)
+                
+                <>
+                
                 <View style={styles.row}>
                     <View style={styles.miniCard}>
                         <Text style={styles.label}>Entradas</Text>
@@ -88,6 +89,20 @@ export default function Dashboard({ user, onLogout, onProfile }) {
                     </View>
                 </View>
 
+                <View style={styles.buttonContainer}>
+                    <TouchableOpacity onPress={onTransaction} style={styles.buttonAdd}>
+                        <Text style={styles.buttonText}>Adicionar Transação</Text>
+                    </TouchableOpacity>
+                </View>
+
+                <View style={styles.buttonContainer}>
+                    <TouchableOpacity onPress={onGetTransactions} style={styles.buttonGetTransactions}>
+                        <Text style={styles.buttonText}>Vizualizar Transações</Text>
+                    </TouchableOpacity>
+                </View>
+
+                </>
+                
             )}
         </View>
     )
@@ -182,7 +197,7 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     buttonAdd: {
-        backgroundColor: '#2e7d32',
+        backgroundColor: '#2c76ffff',
         paddingHorizontal: 20,
         paddingVertical: 10,
         borderRadius: 8,
@@ -190,9 +205,21 @@ const styles = StyleSheet.create({
     buttonText: {
         color: '#fff',
         fontWeight: 'bold',
+        textAlign: 'center'
     },
     profileText: {
         color: '#1976D2', // Azul para diferenciar do vermelho
         fontWeight: 'bold',
-    }
+    },
+    buttonContainer: {
+    marginTop: 20,
+    width: '50%',
+    alignSelf: 'center'
+  },
+  buttonGetTransactions: {
+    backgroundColor: '#ab5212ff',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  }
 });

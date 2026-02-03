@@ -24,7 +24,6 @@ export default function Login( { onSignIn } ) {
 
             onSignIn(user);
 
-            Alert.alert('Login Salvo!', `Token guardado com sucesso.`);
             console.log("Token salvo no dispositivo:", token);
 
         } catch (error) {

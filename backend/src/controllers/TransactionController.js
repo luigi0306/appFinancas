@@ -77,6 +77,7 @@ module.exports = {
             const id_user = req.userId;
             const { startDate, endDate } = req.query; // Datas vêm pela Query String
 
+
             // Criamos um objeto de filtro básico
             let whereCondition = { id_user };
 
@@ -89,14 +90,6 @@ module.exports = {
 
             // 1. Busca as transações no banco
             const transactions = await Transaction.findAll({ where: whereCondition });
-
-            // LOGICA ANTIGA QUE JA RETORNAVA CASO NAO ENCONTRE NENHUMA TRANSAÇÃO
-            // if (transactions.length === 0) {
-            //     return res.status(200).json({
-            //         id_user,
-            //         message: "Nenhuma transação encontrada para este usuário."
-            //     });
-            // }
 
             // 3. Executa o cálculo (Reduce)
             const balance = transactions.reduce((acc, item) => {

@@ -6,37 +6,41 @@ import api from './src/services/api';
 import Login from './src/pages/Login';
 import Dashboard from './src/pages/Dashboards';
 import Profile from './src/pages/Profile';
+import Transaction from './src/pages/Transaction';
+import GetTransactions from './src/pages/GetTransactions';
 
 export default function App() {
   const [user, setUser] = useState(null);
-  const [page, setPage] = useState('dashboard');
+  const [page, setPage] = useState('dashboard'); // Página padrão quando logado
   const [loading, setLoading] = useState(true);
 
-  // useEffect é como o "onInit" ou "constructor". Roda assim que o App abre.
   useEffect(() => {
     async function loadStorageData() {
-      // Busca os dados salvos
       const storedToken = await AsyncStorage.getItem('@MyFinance:token');
       const storedUser = await AsyncStorage.getItem('@MyFinance:user');
 
       if (storedToken && storedUser) {
-        // Se achou, configura o Axios e define o usuário
         api.defaults.headers.authorization = `Bearer ${storedToken}`;
         setUser(JSON.parse(storedUser));
       }
-
+      
       setLoading(false);
     }
-
     loadStorageData();
   }, []);
 
   async function logout() {
-    await AsyncStorage.clear(); // Limpa tudo
+    await AsyncStorage.clear();
     setUser(null);
+    setPage('dashboard');
   }
 
-  // Se estiver carregando (lendo o disco), mostra uma bolinha girando
+  // Função para centralizar o login
+  function handleSignIn(userData) {
+    setUser(userData);
+    setPage('dashboard'); // Garante que ao logar ele vá para a home
+  }
+
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -45,27 +49,28 @@ export default function App() {
     );
   }
 
+  // Se NÃO está logado
   if (!user) {
-    return (
-      <Login onSignIn={setUser} />
-    )
+    return <Login onSignIn={handleSignIn} />;
   }
 
-  if (page === 'profile') {
-    return (
-      <Profile
-        user={user}
-        onBack={() => setPage('dashboard')} // Função para voltar
-      />
-    );
+  // Se ESTÁ logado, o Switch de páginas:
+  switch (page) {
+    case 'profile':
+      return <Profile user={user} onBack={() => setPage('dashboard')} />;
+    case 'transaction':
+      return <Transaction onBack={() => setPage('dashboard')} />;
+    case 'getTransactions':
+      return <GetTransactions user={user} onBack={() => setPage('dashboard')} />;
+    default:
+      return (
+        <Dashboard
+          user={user}
+          onLogout={logout}
+          onProfile={() => setPage('profile')}
+          onTransaction={() => setPage('transaction')}
+          onGetTransactions={() => setPage('getTransactions')}
+        />
+      );
   }
-
-  // Padrão: Mostra Dashboard
-  return (
-    <Dashboard
-      user={user}
-      onLogout={logout}
-      onProfile={() => setPage('profile')} // Função para ir
-    />
-  )
 }
