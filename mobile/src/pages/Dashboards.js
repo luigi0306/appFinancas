@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import api from '../services/api';
 
-export default function Dashboard({ user, onLogout, onProfile, onTransaction, onGetTransactions }) {
+export default function Dashboard({ user, onLogout, onProfile, onTransaction, onTransactionsList }) {
     const [balance, setBalance] = useState({ income: '0.00', outcome: '0.00', total: '0.00' });
     const [loading, setLoading] = useState(true);
 
@@ -96,7 +96,7 @@ export default function Dashboard({ user, onLogout, onProfile, onTransaction, on
                 </View>
 
                 <View style={styles.buttonContainer}>
-                    <TouchableOpacity onPress={onGetTransactions} style={styles.buttonGetTransactions}>
+                    <TouchableOpacity onPress={onTransactionsList} style={styles.buttonTransactionsList}>
                         <Text style={styles.buttonText}>Vizualizar Transações</Text>
                     </TouchableOpacity>
                 </View>
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
     width: '50%',
     alignSelf: 'center'
   },
-  buttonGetTransactions: {
+  buttonTransactionsList: {
     backgroundColor: '#ab5212ff',
     paddingHorizontal: 20,
     paddingVertical: 10,

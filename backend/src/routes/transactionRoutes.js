@@ -11,5 +11,6 @@ router.get('/', TransactionController.index);
 router.delete('/:id_transaction', TransactionController.delete);
 router.get('/balance', TransactionController.getBalance);
 router.get('/report/categories', TransactionController.getCategoryReport);
+router.get('/categories', TransactionController.getCategories);
 
 module.exports = router;

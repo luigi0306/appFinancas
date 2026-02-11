@@ -7,7 +7,7 @@ import Login from './src/pages/Login';
 import Dashboard from './src/pages/Dashboards';
 import Profile from './src/pages/Profile';
 import Transaction from './src/pages/Transaction';
-import GetTransactions from './src/pages/GetTransactions';
+import TransactionsList from './src/pages/TransactionsList';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -20,10 +20,21 @@ export default function App() {
       const storedUser = await AsyncStorage.getItem('@MyFinance:user');
 
       if (storedToken && storedUser) {
-        api.defaults.headers.authorization = `Bearer ${storedToken}`;
-        setUser(JSON.parse(storedUser));
+        try {
+          api.defaults.headers.authorization = `Bearer ${storedToken}`;
+
+          // --- ADICIONE ESTA LINHA DE TESTE ---
+          // Fazemos uma chamada simples (pode ser a de saldo mesmo)
+          await api.get('/transactions/balance');
+
+          setUser(JSON.parse(storedUser));
+        } catch (error) {
+          // Se der qualquer erro (401 ou Network Error de sessão morta)
+          console.log("Sessão inválida no carregamento, deslogando...");
+          logout(); // Limpa o storage e joga pro login
+        }
       }
-      
+
       setLoading(false);
     }
     loadStorageData();
@@ -60,8 +71,8 @@ export default function App() {
       return <Profile user={user} onBack={() => setPage('dashboard')} />;
     case 'transaction':
       return <Transaction onBack={() => setPage('dashboard')} />;
-    case 'getTransactions':
-      return <GetTransactions user={user} onBack={() => setPage('dashboard')} />;
+    case 'transactionsList':
+      return <TransactionsList user={user} onBack={() => setPage('dashboard')} />;
     default:
       return (
         <Dashboard
@@ -69,7 +80,7 @@ export default function App() {
           onLogout={logout}
           onProfile={() => setPage('profile')}
           onTransaction={() => setPage('transaction')}
-          onGetTransactions={() => setPage('getTransactions')}
+          onTransactionsList={() => setPage('transactionsList')}
         />
       );
   }

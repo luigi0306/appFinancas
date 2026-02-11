@@ -1,6 +1,5 @@
 const Transaction = require('../models/transaction');
-const { Op } = require('sequelize');
-
+const { Op, Sequelize } = require('sequelize');
 module.exports = {
 
     async delete(req, res) {
@@ -174,7 +173,8 @@ module.exports = {
                     description: item.description,
                     value: value,
                     date: item.date,
-                    type: item.type_transaction
+                    type: item.type_transaction,
+                    category: item.category
                 });
 
                 return acc;
@@ -189,6 +189,33 @@ module.exports = {
         } catch (error) {
             console.error(error);
             return res.status(500).json({ error: "Erro ao filtrar saldo." });
+        }
+    },
+
+    async getCategories(req, res) {
+        try {
+            const id_user = req.userId;
+
+            // Buscamos apenas a coluna 'category' sem duplicatas
+            const categories = await Transaction.findAll({
+                where: { id_user },
+                attributes: [
+                    [Sequelize.fn('DISTINCT', Sequelize.col('category')), 'category']
+                ],
+                raw: true // Isso simplifica o retorno para um objeto JS puro
+            });
+
+            // O retorno do Sequelize será [{category: 'Comida'}, {category: 'Lazer'}]
+            // Vamos limpar para retornar apenas ['Comida', 'Lazer']
+            const categoryList = categories
+                .map(c => c.category)
+                .filter(c => c != null); // Remove categorias nulas se houver
+
+            return res.json(categoryList);
+
+        } catch (error) {
+            console.error("ERRO NO BACKEND:", error);
+            return res.status(400).json({ error: "Erro ao processar categorias" });
         }
     }
 
