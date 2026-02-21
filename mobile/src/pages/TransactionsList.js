@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, ScrollView } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import api from '../services/api';
 
-export default function TransactionsList({ user, onBack }) {
+export default function TransactionsList({ user, onBack, onEditTransaction }) {
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [availableCategories, setAvailableCategories] = useState([]);
@@ -40,7 +41,7 @@ export default function TransactionsList({ user, onBack }) {
             setLoading(true);
 
             let response;
-            if (selectedCategory === 'Todas'){
+            if (selectedCategory === 'Todas') {
                 response = await api.get('/transactions');
                 setTransactions(response.data.transactions || []);
             } else {
@@ -49,9 +50,10 @@ export default function TransactionsList({ user, onBack }) {
                         category: selectedCategory
                     }
                 });
+                console.log(response.data.items);
                 setTransactions(response.data.items || []);
-            } 
-            
+            }
+
         } catch (error) {
             Alert.alert('Erro', 'Falha ao filtrar');
         } finally {
@@ -59,18 +61,49 @@ export default function TransactionsList({ user, onBack }) {
         }
     }
 
+    const handleDelete = (id) => {
+        Alert.alert(
+            'Excluir Transação',
+            'Tem certeza que deseja excluir esta transação?',
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Excluir',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await api.delete(`/transactions/${id}`);
+                            setTransactions(prev => prev.filter(t => t.id_transaction !== id));
+                        } catch (error) {
+                            Alert.alert('Erro', 'Não foi possível excluir a transação.');
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
     const renderItem = ({ item }) => (
         <View style={styles.transactionCard}>
-            <View>
+            <TouchableOpacity
+                style={{ flex: 1 }}
+                onPress={() => onEditTransaction(item)}
+            >
                 <Text style={styles.desc}>{item.description}</Text>
                 <Text style={styles.cat}>{item.category} • {formatDate(item.createdAt || item.date)}</Text>
-            </View>
+            </TouchableOpacity>
             <Text style={[
                 styles.amount,
                 { color: item.type_transaction === 'Receita' ? '#2e7d32' : '#c62828' }
             ]}>
                 {item.type_transaction === 'Receita' ? '+' : '-'} {formatMoney(item.value)}
             </Text>
+            <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => handleDelete(item.id_transaction)}
+            >
+                <MaterialIcons name="delete-outline" size={26} color="#d32f2f" />
+            </TouchableOpacity>
         </View>
     );
 
@@ -81,9 +114,9 @@ export default function TransactionsList({ user, onBack }) {
             {/* Container do Filtro */}
             <View style={styles.filterWrapper}>
                 <Text style={styles.label}>Filtrar por Categoria:</Text>
-                
-                <TouchableOpacity 
-                    style={styles.selectBox} 
+
+                <TouchableOpacity
+                    style={styles.selectBox}
                     onPress={() => setIsPickerOpen(!isPickerOpen)}
                 >
                     <Text style={styles.selectBoxText}>{selectedCategory}</Text>
@@ -92,26 +125,26 @@ export default function TransactionsList({ user, onBack }) {
 
                 {isPickerOpen && (
                     <View style={styles.optionsContainer}>
-                            {availableCategories.map((cat, index) => (
-                                <TouchableOpacity
-                                    key={index}
-                                    style={[
-                                        styles.optionItem,
-                                        selectedCategory === cat && styles.activeOptionItem
-                                    ]}
-                                    onPress={() => {
-                                        setSelectedCategory(cat);
-                                        setIsPickerOpen(false);
-                                    }}
-                                >
-                                    <Text style={[
-                                        styles.optionText,
-                                        selectedCategory === cat && styles.activeOptionText
-                                    ]}>
-                                        {cat}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
+                        {availableCategories.map((cat, index) => (
+                            <TouchableOpacity
+                                key={index}
+                                style={[
+                                    styles.optionItem,
+                                    selectedCategory === cat && styles.activeOptionItem
+                                ]}
+                                onPress={() => {
+                                    setSelectedCategory(cat);
+                                    setIsPickerOpen(false);
+                                }}
+                            >
+                                <Text style={[
+                                    styles.optionText,
+                                    selectedCategory === cat && styles.activeOptionText
+                                ]}>
+                                    {cat}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
                     </View>
                 )}
             </View>
@@ -135,29 +168,29 @@ export default function TransactionsList({ user, onBack }) {
 }
 
 const styles = StyleSheet.create({
-    container: { 
-        flex: 1, 
-        padding: 20, 
-        backgroundColor: '#f0f2f5', 
-        paddingTop: 50 
+    container: {
+        flex: 1,
+        padding: 20,
+        backgroundColor: '#f0f2f5',
+        paddingTop: 50
     },
-    title: { 
-        fontSize: 24, 
-        fontWeight: 'bold', 
-        marginBottom: 20, 
-        textAlign: 'center', 
-        color: '#333' 
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginBottom: 20,
+        textAlign: 'center',
+        color: '#333'
     },
-    filterWrapper: { 
-        marginBottom: 20, 
+    filterWrapper: {
+        marginBottom: 20,
         zIndex: 10, // Garante que a box flutue sobre a lista
         elevation: 10,
         position: 'relative'
     },
-    label: { 
-        fontSize: 14, 
-        color: '#666', 
-        marginBottom: 5 
+    label: {
+        fontSize: 14,
+        color: '#666',
+        marginBottom: 5
     },
     selectBox: {
         backgroundColor: '#fff',
@@ -180,14 +213,14 @@ const styles = StyleSheet.create({
     },
     optionsContainer: {
         position: 'absolute',
-        top: 75, 
+        top: 75,
         left: 0,
         right: 0,
         backgroundColor: '#fff',
         borderRadius: 8,
         borderWidth: 1,
         borderColor: '#ddd',
-        zIndex: 5000,    
+        zIndex: 5000,
         elevation: 100,
         overflow: 'hidden',
     },
@@ -220,13 +253,20 @@ const styles = StyleSheet.create({
     },
     desc: { fontSize: 16, fontWeight: 'bold', color: '#333' },
     cat: { fontSize: 12, color: '#999', marginTop: 2 },
-    amount: { fontSize: 16, fontWeight: 'bold' },
-    backButton: { 
-        backgroundColor: '#2e7d32', 
-        padding: 15, 
-        borderRadius: 8, 
-        alignItems: 'center', 
-        marginTop: 10 
+    amount: { fontSize: 16, fontWeight: 'bold', marginHorizontal: 8 },
+    deleteButton: {
+        padding: 6,
+        marginLeft: 4,
+    },
+    deleteButtonText: {
+        fontSize: 18,
+    },
+    backButton: {
+        backgroundColor: '#2e7d32',
+        padding: 15,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginTop: 10
     },
     buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
     empty: { textAlign: 'center', marginTop: 50, color: '#999' }

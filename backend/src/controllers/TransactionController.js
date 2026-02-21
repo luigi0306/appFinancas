@@ -71,6 +71,35 @@ module.exports = {
         }
     },
 
+    async update(req, res) {
+        try {
+            const { id_transaction } = req.params;
+            const { type_transaction, value, category, description, date } = req.body;
+            const id_user = req.userId;
+
+            const transaction = await Transaction.findOne({
+                where: { id_transaction, id_user }
+            });
+
+            if (!transaction) {
+                return res.status(404).json({ error: "Transação não encontrada." });
+            }
+
+            // 2. Atualiza os campos
+            await transaction.update({
+                type_transaction,
+                value,
+                category,
+                description,
+                date
+            });
+
+            return res.json({ message: "Atualizado com sucesso!", transaction });
+        } catch (error) {
+            return res.status(400).json({ error: "Erro ao atualizar transação. Verifique os dados." });
+        }
+    },
+
     async getBalance(req, res) {
         try {
             const id_user = req.userId;

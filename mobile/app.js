@@ -12,6 +12,7 @@ import TransactionsList from './src/pages/TransactionsList';
 export default function App() {
   const [user, setUser] = useState(null);
   const [page, setPage] = useState('dashboard'); // Página padrão quando logado
+  const [editingTransaction, setEditingTransaction] = useState(null); // Estado para edição
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -70,9 +71,26 @@ export default function App() {
     case 'profile':
       return <Profile user={user} onBack={() => setPage('dashboard')} />;
     case 'transaction':
-      return <Transaction onBack={() => setPage('dashboard')} />;
+      return (
+        <Transaction
+          transactionData={editingTransaction}
+          onBack={() => {
+            setEditingTransaction(null); // Limpa ao voltar
+            setPage('dashboard');
+          }}
+        />
+      );
     case 'transactionsList':
-      return <TransactionsList user={user} onBack={() => setPage('dashboard')} />;
+      return (
+        <TransactionsList
+          user={user}
+          onEditTransaction={(transaction) => {
+            setEditingTransaction(transaction);
+            setPage('transaction');
+          }}
+          onBack={() => setPage('dashboard')}
+        />
+      );
     default:
       return (
         <Dashboard

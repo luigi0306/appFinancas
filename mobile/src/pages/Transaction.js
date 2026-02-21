@@ -1,13 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ScrollView } from 'react-native';
 import api from '../services/api';
 
-export default function Transaction({ onBack }) {
+export default function Transaction({ onBack, transactionData }) {
   const [description, setDescription] = useState('');
   const [value, setValue] = useState('');
   const [type, setType] = useState('Receita'); // Padrão
   const [category, setCategory] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const isEditing = !!transactionData;
+
+  useEffect(() => {
+    if (transactionData) {
+      setDescription(transactionData.description || '');
+      // Se vier como número, converte para string para o TextInput
+      setValue(transactionData.value ? String(transactionData.value) : '');
+      setType(transactionData.type_transaction || transactionData.type || 'Receita');
+      setCategory(transactionData.category || '');
+    }
+  }, [transactionData]);
 
   async function handleSave() {
     if (!description || !value || !category) {
@@ -17,15 +29,22 @@ export default function Transaction({ onBack }) {
 
     setLoading(true);
     try {
-      await api.post('/transactions', {
+      const payload = {
         description,
         value: parseFloat(value.replace(',', '.')), // Garante formato decimal
         type_transaction: type,
         category,
-        date: new Date(), // Por enquanto, salva com a data atual
-      });
+        date: transactionData ? transactionData.date : new Date(), // Mantém a data original na edição
+      };
 
-      Alert.alert('Sucesso', 'Transação salva com sucesso!');
+      if (isEditing) {
+        await api.put(`/transactions/${transactionData.id_transaction}`, payload);
+        Alert.alert('Sucesso', 'Transação atualizada com sucesso!');
+      } else {
+        await api.post('/transactions', payload);
+        Alert.alert('Sucesso', 'Transação criada com sucesso!');
+      }
+
       onBack(); // Volta para o Dashboard para ver o saldo atualizado
     } catch (error) {
       console.error(error);
@@ -37,19 +56,19 @@ export default function Transaction({ onBack }) {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Nova Transação</Text>
+      <Text style={styles.title}>{isEditing ? 'Editar Transação' : 'Nova Transação'}</Text>
 
       <Text style={styles.label}>Tipo</Text>
       <View style={styles.typeContainer}>
-        <TouchableOpacity 
-          style={[styles.typeButton, type === 'Receita' && styles.selectedIncome]} 
+        <TouchableOpacity
+          style={[styles.typeButton, type === 'Receita' && styles.selectedIncome]}
           onPress={() => setType('Receita')}
         >
           <Text style={type === 'Receita' ? styles.typeTextSelected : styles.typeText}>Receita</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={[styles.typeButton, type === 'Despesa' && styles.selectedOutcome]} 
+        <TouchableOpacity
+          style={[styles.typeButton, type === 'Despesa' && styles.selectedOutcome]}
           onPress={() => setType('Despesa')}
         >
           <Text style={type === 'Despesa' ? styles.typeTextSelected : styles.typeText}>Despesa</Text>
@@ -57,26 +76,26 @@ export default function Transaction({ onBack }) {
       </View>
 
       <Text style={styles.label}>Descrição</Text>
-      <TextInput 
-        style={styles.input} 
-        placeholder="Ex: Aluguel, Salário..." 
+      <TextInput
+        style={styles.input}
+        placeholder="Ex: Aluguel, Salário..."
         value={description}
         onChangeText={setDescription}
       />
 
       <Text style={styles.label}>Valor (R$)</Text>
-      <TextInput 
-        style={styles.input} 
-        placeholder="0,00" 
+      <TextInput
+        style={styles.input}
+        placeholder="0,00"
         keyboardType="numeric"
         value={value}
         onChangeText={setValue}
       />
 
       <Text style={styles.label}>Categoria</Text>
-      <TextInput 
-        style={styles.input} 
-        placeholder="Ex: Casa, Lazer, Comida..." 
+      <TextInput
+        style={styles.input}
+        placeholder="Ex: Casa, Lazer, Comida..."
         value={category}
         onChangeText={setCategory}
       />

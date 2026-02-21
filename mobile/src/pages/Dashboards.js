@@ -69,40 +69,40 @@ export default function Dashboard({ user, onLogout, onProfile, onTransaction, on
                 // OPÇÃO A: EMPTY STATE (Usuário Novo)
                 <View style={styles.emptyStateContainer}>
                     <Text style={styles.emptyMessage}>Você ainda não tem movimentações.</Text>
-                    <TouchableOpacity style={styles.buttonAdd}>
+                    <TouchableOpacity style={styles.buttonAdd} onPress={onTransaction}>
                         <Text style={styles.buttonText}>Adicionar Primeira Transação</Text>
                     </TouchableOpacity>
                 </View>
 
             ) : (
-                
+
                 <>
-                
-                <View style={styles.row}>
-                    <View style={styles.miniCard}>
-                        <Text style={styles.label}>Entradas</Text>
-                        <Text style={styles.income}>{formatMoney(balance.income)}</Text>
-                    </View>
-                    <View style={styles.miniCard}>
-                        <Text style={styles.label}>Saídas</Text>
-                        <Text style={styles.outcome}>{formatMoney(balance.outcome)}</Text>
-                    </View>
-                </View>
 
-                <View style={styles.buttonContainer}>
-                    <TouchableOpacity onPress={onTransaction} style={styles.buttonAdd}>
-                        <Text style={styles.buttonText}>Adicionar Transação</Text>
-                    </TouchableOpacity>
-                </View>
+                    <View style={styles.row}>
+                        <View style={styles.miniCard}>
+                            <Text style={styles.label}>Entradas</Text>
+                            <Text style={styles.income}>{formatMoney(balance.income)}</Text>
+                        </View>
+                        <View style={styles.miniCard}>
+                            <Text style={styles.label}>Saídas</Text>
+                            <Text style={styles.outcome}>{formatMoney(balance.outcome)}</Text>
+                        </View>
+                    </View>
 
-                <View style={styles.buttonContainer}>
-                    <TouchableOpacity onPress={onTransactionsList} style={styles.buttonTransactionsList}>
-                        <Text style={styles.buttonText}>Vizualizar Transações</Text>
-                    </TouchableOpacity>
-                </View>
+                    <View style={styles.buttonContainer}>
+                        <TouchableOpacity onPress={onTransaction} style={styles.buttonAdd}>
+                            <Text style={styles.buttonText}>Adicionar Transação</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.buttonContainer}>
+                        <TouchableOpacity onPress={onTransactionsList} style={styles.buttonTransactionsList}>
+                            <Text style={styles.buttonText}>Vizualizar Transações</Text>
+                        </TouchableOpacity>
+                    </View>
 
                 </>
-                
+
             )}
         </View>
     )
@@ -212,14 +212,14 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     buttonContainer: {
-    marginTop: 20,
-    width: '50%',
-    alignSelf: 'center'
-  },
-  buttonTransactionsList: {
-    backgroundColor: '#ab5212ff',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  }
+        marginTop: 20,
+        width: '50%',
+        alignSelf: 'center'
+    },
+    buttonTransactionsList: {
+        backgroundColor: '#ab5212ff',
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 8,
+    }
 });
