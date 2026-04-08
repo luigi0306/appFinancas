@@ -7,6 +7,7 @@ const sequelize = new Sequelize(
   process.env.DB_PASS,
   {
     host: process.env.DB_HOST,
+    port: process.env.DB_PORT || 5432,
     dialect: process.env.DB_DIALECT,
     logging: false, // Define como true se quiser ver os comandos SQL no terminal
     define: {
@@ -20,7 +21,7 @@ const sequelize = new Sequelize(
 async function testConnection() {
   try {
     await sequelize.authenticate();
-    console.log('✅ Conexão com o MySQL estabelecida com sucesso!');
+    console.log('✅ Conexão com o PostgreSQL estabelecida com sucesso!');
   } catch (error) {
     console.error('❌ Não foi possível conectar ao banco de dados:', error);
   }

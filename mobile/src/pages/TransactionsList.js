@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, ScrollView } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, StatusBar, Modal, Pressable } from 'react-native';
 import api from '../services/api';
 
 export default function TransactionsList({ user, onBack, onEditTransaction }) {
@@ -39,23 +38,18 @@ export default function TransactionsList({ user, onBack, onEditTransaction }) {
     async function loadTransactions() {
         try {
             setLoading(true);
-
             let response;
             if (selectedCategory === 'Todas') {
                 response = await api.get('/transactions');
                 setTransactions(response.data.transactions || []);
             } else {
                 response = await api.get('/transactions/report/categories', {
-                    params: {
-                        category: selectedCategory
-                    }
+                    params: { category: selectedCategory }
                 });
-                console.log(response.data.items);
                 setTransactions(response.data.items || []);
             }
-
         } catch (error) {
-            Alert.alert('Erro', 'Falha ao filtrar');
+            Alert.alert('Erro', 'Falha ao carregar');
         } finally {
             setLoading(false);
         }
@@ -63,8 +57,8 @@ export default function TransactionsList({ user, onBack, onEditTransaction }) {
 
     const handleDelete = (id) => {
         Alert.alert(
-            'Excluir Transação',
-            'Tem certeza que deseja excluir esta transação?',
+            'Excluir',
+            'Tem certeza?',
             [
                 { text: 'Cancelar', style: 'cancel' },
                 {
@@ -75,7 +69,7 @@ export default function TransactionsList({ user, onBack, onEditTransaction }) {
                             await api.delete(`/transactions/${id}`);
                             setTransactions(prev => prev.filter(t => t.id_transaction !== id));
                         } catch (error) {
-                            Alert.alert('Erro', 'Não foi possível excluir a transação.');
+                            Alert.alert('Erro', 'Não foi possível excluir.');
                         }
                     }
                 }
@@ -85,84 +79,74 @@ export default function TransactionsList({ user, onBack, onEditTransaction }) {
 
     const renderItem = ({ item }) => (
         <View style={styles.transactionCard}>
-            <TouchableOpacity
-                style={{ flex: 1 }}
-                onPress={() => onEditTransaction(item)}
-            >
+            <TouchableOpacity style={styles.cardContent} onPress={() => onEditTransaction(item)}>
                 <Text style={styles.desc}>{item.description}</Text>
                 <Text style={styles.cat}>{item.category} • {formatDate(item.createdAt || item.date)}</Text>
             </TouchableOpacity>
-            <Text style={[
-                styles.amount,
-                { color: item.type_transaction === 'Receita' ? '#2e7d32' : '#c62828' }
-            ]}>
-                {item.type_transaction === 'Receita' ? '+' : '-'} {formatMoney(item.value)}
-            </Text>
-            <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={() => handleDelete(item.id_transaction)}
-            >
-                <MaterialIcons name="delete-outline" size={26} color="#d32f2f" />
-            </TouchableOpacity>
+            <View style={styles.cardRight}>
+                <Text style={[
+                    styles.amount,
+                    item.type_transaction === 'Receita' ? styles.amountPositive : styles.amountNegative
+                ]}>
+                    {item.type_transaction === 'Receita' ? '+' : '-'} {formatMoney(item.value)}
+                </Text>
+                <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item.id_transaction)}>
+                    <Text style={styles.deleteText}>×</Text>
+                </TouchableOpacity>
+            </View>
         </View>
     );
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Histórico</Text>
-
-            {/* Container do Filtro */}
-            <View style={styles.filterWrapper}>
-                <Text style={styles.label}>Filtrar por Categoria:</Text>
-
-                <TouchableOpacity
-                    style={styles.selectBox}
-                    onPress={() => setIsPickerOpen(!isPickerOpen)}
-                >
-                    <Text style={styles.selectBoxText}>{selectedCategory}</Text>
-                    <Text style={styles.arrow}>{isPickerOpen ? '▲' : '▼'}</Text>
+            <StatusBar barStyle="light-content" backgroundColor="#191919" />
+            
+            <View style={styles.header}>
+                <TouchableOpacity onPress={onBack}>
+                    <Text style={styles.backText}>← Voltar</Text>
                 </TouchableOpacity>
+                <Text style={styles.title}>Histórico</Text>
+                <View style={{ width: 60 }} />
+            </View>
 
-                {isPickerOpen && (
-                    <View style={styles.optionsContainer}>
-                        {availableCategories.map((cat, index) => (
+            <View style={styles.filterContainer}>
+                <TouchableOpacity style={styles.filterBtn} onPress={() => setIsPickerOpen(true)}>
+                    <Text style={styles.filterBtnText}>{selectedCategory}</Text>
+                    <Text style={styles.filterArrow}>▼</Text>
+                </TouchableOpacity>
+            </View>
+
+            <Modal visible={isPickerOpen} transparent animationType="fade">
+                <Pressable style={styles.modalOverlay} onPress={() => setIsPickerOpen(false)}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Filtrar por categoria</Text>
+                        {availableCategories.map((cat) => (
                             <TouchableOpacity
-                                key={index}
-                                style={[
-                                    styles.optionItem,
-                                    selectedCategory === cat && styles.activeOptionItem
-                                ]}
+                                key={cat}
+                                style={[styles.modalOption, selectedCategory === cat && styles.modalOptionActive]}
                                 onPress={() => {
                                     setSelectedCategory(cat);
                                     setIsPickerOpen(false);
                                 }}
                             >
-                                <Text style={[
-                                    styles.optionText,
-                                    selectedCategory === cat && styles.activeOptionText
-                                ]}>
+                                <Text style={[styles.modalOptionText, selectedCategory === cat && styles.modalOptionTextActive]}>
                                     {cat}
                                 </Text>
                             </TouchableOpacity>
                         ))}
                     </View>
-                )}
-            </View>
+                </Pressable>
+            </Modal>
 
             <FlatList
                 data={transactions}
-                scrollEnabled={!isPickerOpen} // <--- SE O MENU TÁ ABERTO, A LISTA TRAVA
                 keyExtractor={(item, index) => String(item.id_transaction || index)}
                 renderItem={renderItem}
-                contentContainerStyle={{ paddingBottom: 80 }} // Espaço para não cobrir o botão voltar
-                ListEmptyComponent={<Text style={styles.empty}>Nenhuma transação encontrada.</Text>}
+                contentContainerStyle={styles.listContent}
+                ListEmptyComponent={<Text style={styles.empty}>Nenhuma transação</Text>}
                 refreshing={loading}
                 onRefresh={loadTransactions}
             />
-
-            <TouchableOpacity style={styles.backButton} onPress={onBack}>
-                <Text style={styles.buttonText}>Voltar para o Dashboard</Text>
-            </TouchableOpacity>
         </View>
     );
 }
@@ -170,104 +154,129 @@ export default function TransactionsList({ user, onBack, onEditTransaction }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#191919',
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         padding: 20,
-        backgroundColor: '#f0f2f5',
-        paddingTop: 50
+        paddingTop: 50,
+    },
+    backText: {
+        color: '#6B6B6B',
+        fontSize: 14,
     },
     title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 20,
-        textAlign: 'center',
-        color: '#333'
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#EBEBEB',
     },
-    filterWrapper: {
-        marginBottom: 20,
-        zIndex: 10, // Garante que a box flutue sobre a lista
-        elevation: 10,
-        position: 'relative'
+    filterContainer: {
+        paddingHorizontal: 20,
+        marginBottom: 16,
     },
-    label: {
-        fontSize: 14,
-        color: '#666',
-        marginBottom: 5
-    },
-    selectBox: {
-        backgroundColor: '#fff',
-        padding: 15,
+    filterBtn: {
+        backgroundColor: '#232323',
         borderRadius: 8,
-        borderWidth: 1,
-        borderColor: '#ddd',
+        padding: 14,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
     },
-    selectBoxText: {
+    filterBtnText: {
+        color: '#EBEBEB',
+        fontSize: 14,
+    },
+    filterArrow: {
+        color: '#6B6B6B',
+        fontSize: 12,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        backgroundColor: '#232323',
+        borderRadius: 12,
+        padding: 20,
+        width: '80%',
+        maxHeight: '60%',
+    },
+    modalTitle: {
         fontSize: 16,
-        color: '#333',
+        fontWeight: '600',
+        color: '#EBEBEB',
+        marginBottom: 16,
+    },
+    modalOption: {
+        padding: 14,
+        borderRadius: 8,
+    },
+    modalOptionActive: {
+        backgroundColor: '#333333',
+    },
+    modalOptionText: {
+        color: '#9E9E9E',
+        fontSize: 14,
+    },
+    modalOptionTextActive: {
+        color: '#EBEBEB',
         fontWeight: '500',
     },
-    arrow: {
-        fontSize: 12,
-        color: '#666'
-    },
-    optionsContainer: {
-        position: 'absolute',
-        top: 75,
-        left: 0,
-        right: 0,
-        backgroundColor: '#fff',
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: '#ddd',
-        zIndex: 5000,
-        elevation: 100,
-        overflow: 'hidden',
-    },
-    optionItem: {
-        padding: 15,
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
-        backgroundColor: '#fff',
-    },
-    activeOptionItem: {
-        backgroundColor: '#e8f5e9',
-    },
-    optionText: {
-        fontSize: 14,
-        color: '#666',
-    },
-    activeOptionText: {
-        color: '#2e7d32',
-        fontWeight: 'bold',
+    listContent: {
+        padding: 20,
+        paddingTop: 0,
     },
     transactionCard: {
-        backgroundColor: '#fff',
-        padding: 15,
+        backgroundColor: '#232323',
         borderRadius: 12,
+        padding: 14,
         marginBottom: 10,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        elevation: 1
     },
-    desc: { fontSize: 16, fontWeight: 'bold', color: '#333' },
-    cat: { fontSize: 12, color: '#999', marginTop: 2 },
-    amount: { fontSize: 16, fontWeight: 'bold', marginHorizontal: 8 },
-    deleteButton: {
-        padding: 6,
-        marginLeft: 4,
+    cardContent: {
+        flex: 1,
     },
-    deleteButtonText: {
-        fontSize: 18,
+    desc: {
+        fontSize: 15,
+        fontWeight: '500',
+        color: '#EBEBEB',
     },
-    backButton: {
-        backgroundColor: '#2e7d32',
-        padding: 15,
-        borderRadius: 8,
-        alignItems: 'center',
-        marginTop: 10
+    cat: {
+        fontSize: 12,
+        color: '#6B6B6B',
+        marginTop: 4,
     },
-    buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-    empty: { textAlign: 'center', marginTop: 50, color: '#999' }
+    cardRight: {
+        alignItems: 'flex-end',
+    },
+    amount: {
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    amountPositive: {
+        color: '#4CAF50',
+    },
+    amountNegative: {
+        color: '#EF5350',
+    },
+    deleteBtn: {
+        marginTop: 6,
+        padding: 4,
+    },
+    deleteText: {
+        fontSize: 20,
+        color: '#6B6B6B',
+    },
+    empty: {
+        textAlign: 'center',
+        marginTop: 40,
+        color: '#6B6B6B',
+        fontSize: 14,
+    },
 });

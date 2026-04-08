@@ -1,129 +1,200 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, ScrollView, KeyboardAvoidingView, Platform, StatusBar } from 'react-native';
 import api from '../services/api';
 
 export default function Transaction({ onBack, transactionData }) {
-  const [description, setDescription] = useState('');
-  const [value, setValue] = useState('');
-  const [type, setType] = useState('Receita'); // Padrão
-  const [category, setCategory] = useState('');
-  const [loading, setLoading] = useState(false);
+    const [description, setDescription] = useState('');
+    const [value, setValue] = useState('');
+    const [type, setType] = useState('Receita');
+    const [category, setCategory] = useState('');
+    const [loading, setLoading] = useState(false);
 
-  const isEditing = !!transactionData;
+    const isEditing = !!transactionData;
 
-  useEffect(() => {
-    if (transactionData) {
-      setDescription(transactionData.description || '');
-      // Se vier como número, converte para string para o TextInput
-      setValue(transactionData.value ? String(transactionData.value) : '');
-      setType(transactionData.type_transaction || transactionData.type || 'Receita');
-      setCategory(transactionData.category || '');
+    useEffect(() => {
+        if (transactionData) {
+            setDescription(transactionData.description || '');
+            setValue(transactionData.value ? String(transactionData.value) : '');
+            setType(transactionData.type_transaction || transactionData.type || 'Receita');
+            setCategory(transactionData.category || '');
+        }
+    }, [transactionData]);
+
+    async function handleSave() {
+        if (!description || !value || !category) {
+            Alert.alert('Atenção', 'Preencha todos os campos.');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const payload = {
+                description,
+                value: parseFloat(value.replace(',', '.')),
+                type_transaction: type,
+                category,
+                date: transactionData ? transactionData.date : new Date(),
+            };
+
+            if (isEditing) {
+                await api.put(`/transactions/${transactionData.id_transaction}`, payload);
+                Alert.alert('Sucesso', 'Transação atualizada!');
+            } else {
+                await api.post('/transactions', payload);
+                Alert.alert('Sucesso', 'Transação criada!');
+            }
+            onBack();
+        } catch (error) {
+            Alert.alert('Erro', 'Não foi possível salvar.');
+        } finally {
+            setLoading(false);
+        }
     }
-  }, [transactionData]);
 
-  async function handleSave() {
-    if (!description || !value || !category) {
-      Alert.alert('Erro', 'Preencha todos os campos.');
-      return;
-    }
+    return (
+        <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <StatusBar barStyle="light-content" backgroundColor="#191919" />
+            <ScrollView contentContainerStyle={styles.content}>
+                <TouchableOpacity style={styles.backBtn} onPress={onBack}>
+                    <Text style={styles.backBtnText}>← Voltar</Text>
+                </TouchableOpacity>
 
-    setLoading(true);
-    try {
-      const payload = {
-        description,
-        value: parseFloat(value.replace(',', '.')), // Garante formato decimal
-        type_transaction: type,
-        category,
-        date: transactionData ? transactionData.date : new Date(), // Mantém a data original na edição
-      };
+                <Text style={styles.title}>{isEditing ? 'Editar' : 'Nova'} transação</Text>
 
-      if (isEditing) {
-        await api.put(`/transactions/${transactionData.id_transaction}`, payload);
-        Alert.alert('Sucesso', 'Transação atualizada com sucesso!');
-      } else {
-        await api.post('/transactions', payload);
-        Alert.alert('Sucesso', 'Transação criada com sucesso!');
-      }
+                <View style={styles.typeSelector}>
+                    <TouchableOpacity
+                        style={[styles.typeBtn, type === 'Receita' && styles.typeBtnActivePositive]}
+                        onPress={() => setType('Receita')}
+                    >
+                        <Text style={[styles.typeBtnText, type === 'Receita' && styles.typeBtnTextActive]}>↑ Receita</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.typeBtn, type === 'Despesa' && styles.typeBtnActiveNegative]}
+                        onPress={() => setType('Despesa')}
+                    >
+                        <Text style={[styles.typeBtnText, type === 'Despesa' && styles.typeBtnTextActive]}>↓ Despesa</Text>
+                    </TouchableOpacity>
+                </View>
 
-      onBack(); // Volta para o Dashboard para ver o saldo atualizado
-    } catch (error) {
-      console.error(error);
-      Alert.alert('Erro', 'Não foi possível salvar a transação.');
-    } finally {
-      setLoading(false);
-    }
-  }
+                <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Descrição</Text>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Ex: Salário, Aluguel..."
+                        placeholderTextColor="#6B6B6B"
+                        value={description}
+                        onChangeText={setDescription}
+                    />
+                </View>
 
-  return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>{isEditing ? 'Editar Transação' : 'Nova Transação'}</Text>
+                <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Valor (R$)</Text>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="0,00"
+                        placeholderTextColor="#6B6B6B"
+                        keyboardType="numeric"
+                        value={value}
+                        onChangeText={setValue}
+                    />
+                </View>
 
-      <Text style={styles.label}>Tipo</Text>
-      <View style={styles.typeContainer}>
-        <TouchableOpacity
-          style={[styles.typeButton, type === 'Receita' && styles.selectedIncome]}
-          onPress={() => setType('Receita')}
-        >
-          <Text style={type === 'Receita' ? styles.typeTextSelected : styles.typeText}>Receita</Text>
-        </TouchableOpacity>
+                <View style={styles.inputGroup}>
+                    <Text style={styles.label}>Categoria</Text>
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Ex: Casa, Lazer, Comida..."
+                        placeholderTextColor="#6B6B6B"
+                        value={category}
+                        onChangeText={setCategory}
+                    />
+                </View>
 
-        <TouchableOpacity
-          style={[styles.typeButton, type === 'Despesa' && styles.selectedOutcome]}
-          onPress={() => setType('Despesa')}
-        >
-          <Text style={type === 'Despesa' ? styles.typeTextSelected : styles.typeText}>Despesa</Text>
-        </TouchableOpacity>
-      </View>
-
-      <Text style={styles.label}>Descrição</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Ex: Aluguel, Salário..."
-        value={description}
-        onChangeText={setDescription}
-      />
-
-      <Text style={styles.label}>Valor (R$)</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="0,00"
-        keyboardType="numeric"
-        value={value}
-        onChangeText={setValue}
-      />
-
-      <Text style={styles.label}>Categoria</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Ex: Casa, Lazer, Comida..."
-        value={category}
-        onChangeText={setCategory}
-      />
-
-      <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={loading}>
-        <Text style={styles.saveButtonText}>{loading ? 'Salvando...' : 'Confirmar'}</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.backButton} onPress={onBack}>
-        <Text style={styles.backButtonText}>Cancelar</Text>
-      </TouchableOpacity>
-    </ScrollView>
-  );
+                <TouchableOpacity style={styles.submitBtn} onPress={handleSave} disabled={loading}>
+                    <Text style={styles.submitBtnText}>{loading ? 'Salvando...' : 'Confirmar'}</Text>
+                </TouchableOpacity>
+            </ScrollView>
+        </KeyboardAvoidingView>
+    );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, backgroundColor: '#f0f2f5', flexGrow: 1, justifyContent: 'center' },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 30, textAlign: 'center' },
-  label: { fontSize: 16, color: '#333', marginBottom: 5, fontWeight: '500' },
-  input: { backgroundColor: '#fff', padding: 15, borderRadius: 8, marginBottom: 20, fontSize: 16, elevation: 1 },
-  typeContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 25 },
-  typeButton: { flex: 1, padding: 12, alignItems: 'center', borderRadius: 8, backgroundColor: '#ddd', marginHorizontal: 5 },
-  selectedIncome: { backgroundColor: '#2e7d32' },
-  selectedOutcome: { backgroundColor: '#c62828' },
-  typeText: { color: '#666', fontWeight: 'bold' },
-  typeTextSelected: { color: '#fff', fontWeight: 'bold' },
-  saveButton: { backgroundColor: '#2e7d32', padding: 18, borderRadius: 8, alignItems: 'center', marginTop: 10 },
-  saveButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 18 },
-  backButton: { marginTop: 15, alignItems: 'center' },
-  backButtonText: { color: '#666', fontSize: 16 }
+    container: {
+        flex: 1,
+        backgroundColor: '#191919',
+    },
+    content: {
+        padding: 20,
+        paddingTop: 50,
+    },
+    backBtn: {
+        marginBottom: 16,
+    },
+    backBtnText: {
+        color: '#6B6B6B',
+        fontSize: 14,
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: '600',
+        color: '#EBEBEB',
+        marginBottom: 24,
+    },
+    typeSelector: {
+        flexDirection: 'row',
+        gap: 12,
+        marginBottom: 24,
+    },
+    typeBtn: {
+        flex: 1,
+        padding: 14,
+        borderRadius: 8,
+        backgroundColor: '#232323',
+        alignItems: 'center',
+    },
+    typeBtnActivePositive: {
+        backgroundColor: '#1B5E20',
+    },
+    typeBtnActiveNegative: {
+        backgroundColor: '#B71C1C',
+    },
+    typeBtnText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#6B6B6B',
+    },
+    typeBtnTextActive: {
+        color: '#EBEBEB',
+    },
+    inputGroup: {
+        marginBottom: 16,
+    },
+    label: {
+        fontSize: 13,
+        fontWeight: '500',
+        color: '#9E9E9E',
+        marginBottom: 6,
+    },
+    input: {
+        backgroundColor: '#232323',
+        borderRadius: 8,
+        paddingHorizontal: 14,
+        paddingVertical: 13,
+        fontSize: 15,
+        color: '#EBEBEB',
+        borderWidth: 1,
+        borderColor: '#333333',
+    },
+    submitBtn: {
+        backgroundColor: '#EBEBEB',
+        borderRadius: 8,
+        paddingVertical: 14,
+        alignItems: 'center',
+        marginTop: 12,
+    },
+    submitBtnText: {
+        color: '#191919',
+        fontSize: 15,
+        fontWeight: '600',
+    },
 });

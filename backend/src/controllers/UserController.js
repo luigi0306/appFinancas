@@ -3,7 +3,7 @@ const LibraryAcess = require('../models/library_acess');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-const SECRET_KEY = process.env.JWT_SECRET;
+const SECRET_KEY = process.env.JWT_SECRET || 'supersecretkey';
 
 module.exports = {
     async store(req, res) {

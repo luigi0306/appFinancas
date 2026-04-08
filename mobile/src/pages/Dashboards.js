@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import api from '../services/api';
 
 export default function Dashboard({ user, onLogout, onProfile, onTransaction, onTransactionsList }) {
@@ -9,23 +9,17 @@ export default function Dashboard({ user, onLogout, onProfile, onTransaction, on
     useEffect(() => {
         async function loadBalance() {
             try {
-                // Chama a rota que calcula o saldo no Backend
-                // O Axios já está enviando o Token automaticamente pelo api.js
                 const response = await api.get('/transactions/balance');
-
                 setBalance(response.data);
-
             } catch (error) {
                 console.log("Erro ao buscar saldo:", error.response?.data || error.message);
             } finally {
                 setLoading(false);
             }
         }
-
         loadBalance();
     }, []);
 
-    // Função auxiliar para formatar dinheiro (R$)
     const formatMoney = (value) => {
         return Number(value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     };
@@ -33,193 +27,219 @@ export default function Dashboard({ user, onLogout, onProfile, onTransaction, on
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#2e7d32" />
+                <ActivityIndicator size="large" color="#EBEBEB" />
             </View>
         );
     }
 
+    const isPositive = parseFloat(balance.total) >= 0;
+
     return (
-        <View style={styles.container}>
-
-            {/* --- HEADER --- */}
+        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
             <View style={styles.header}>
-                <Text style={styles.greeting}>Olá, {user.name}</Text>
-                <View style={{ flexDirection: 'row' }}>
-                    {/* Botão de Perfil (Neutro) */}
-                    <TouchableOpacity onPress={onProfile} style={{ marginRight: 20 }}>
-                        <Text style={styles.profileText}>Perfil</Text>
+                <View>
+                    <Text style={styles.greeting}>Olá, {user.name}</Text>
+                    <Text style={styles.date}>{new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
+                </View>
+                <View style={styles.headerActions}>
+                    <TouchableOpacity onPress={onProfile} style={styles.iconButton}>
+                        <Text style={styles.profileIcon}>👤</Text>
                     </TouchableOpacity>
-
-                    {/* Botão de Sair (Perigo/Ação Final) */}
-                    <TouchableOpacity onPress={onLogout}>
-                        <Text style={styles.logoutText}>Sair</Text>
+                    <TouchableOpacity onPress={onLogout} style={styles.iconButton}>
+                        <Text style={styles.exitText}>Sair</Text>
                     </TouchableOpacity>
                 </View>
             </View>
 
-            {/* CARD DE SALDO (Sempre aparece) */}
-            <View style={styles.card}>
-                <Text style={styles.cardTitle}>Saldo Atual</Text>
-                <Text style={styles.balance}>{formatMoney(balance.total)}</Text>
+            <View style={styles.balanceCard}>
+                <Text style={styles.balanceLabel}>Saldo total</Text>
+                <Text style={[styles.balanceValue, isPositive ? styles.positive : styles.negative]}>
+                    {formatMoney(balance.total)}
+                </Text>
             </View>
 
-            {/* LÓGICA CONDICIONAL DE UI */}
             {balance.count === 0 ? (
-
-                // OPÇÃO A: EMPTY STATE (Usuário Novo)
-                <View style={styles.emptyStateContainer}>
-                    <Text style={styles.emptyMessage}>Você ainda não tem movimentações.</Text>
-                    <TouchableOpacity style={styles.buttonAdd} onPress={onTransaction}>
-                        <Text style={styles.buttonText}>Adicionar Primeira Transação</Text>
+                <View style={styles.emptyState}>
+                    <Text style={styles.emptyIcon}>◉</Text>
+                    <Text style={styles.emptyTitle}>Nenhuma transação ainda</Text>
+                    <Text style={styles.emptyText}>Comece a registrar suas finanças</Text>
+                    <TouchableOpacity style={styles.button} onPress={onTransaction}>
+                        <Text style={styles.buttonText}>Adicionar transação</Text>
                     </TouchableOpacity>
                 </View>
-
             ) : (
-
-                <>
-
-                    <View style={styles.row}>
-                        <View style={styles.miniCard}>
-                            <Text style={styles.label}>Entradas</Text>
-                            <Text style={styles.income}>{formatMoney(balance.income)}</Text>
+                <View style={styles.statsContainer}>
+                    <View style={styles.statsRow}>
+                        <View style={styles.statCard}>
+                            <Text style={styles.statLabel}>Entradas</Text>
+                            <Text style={styles.statValuePositive}>↑ {formatMoney(balance.income)}</Text>
                         </View>
-                        <View style={styles.miniCard}>
-                            <Text style={styles.label}>Saídas</Text>
-                            <Text style={styles.outcome}>{formatMoney(balance.outcome)}</Text>
+                        <View style={styles.statCard}>
+                            <Text style={styles.statLabel}>Saídas</Text>
+                            <Text style={styles.statValueNegative}>↓ {formatMoney(balance.outcome)}</Text>
                         </View>
                     </View>
 
-                    <View style={styles.buttonContainer}>
-                        <TouchableOpacity onPress={onTransaction} style={styles.buttonAdd}>
-                            <Text style={styles.buttonText}>Adicionar Transação</Text>
-                        </TouchableOpacity>
-                    </View>
+                    <TouchableOpacity style={styles.buttonPrimary} onPress={onTransaction}>
+                        <Text style={styles.buttonPrimaryText}>+ Nova transação</Text>
+                    </TouchableOpacity>
 
-                    <View style={styles.buttonContainer}>
-                        <TouchableOpacity onPress={onTransactionsList} style={styles.buttonTransactionsList}>
-                            <Text style={styles.buttonText}>Vizualizar Transações</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                </>
-
+                    <TouchableOpacity style={styles.buttonSecondary} onPress={onTransactionsList}>
+                        <Text style={styles.buttonSecondaryText}>Ver histórico</Text>
+                    </TouchableOpacity>
+                </View>
             )}
-        </View>
-    )
-
+        </ScrollView>
+    );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#191919',
+    },
+    content: {
         padding: 20,
-        backgroundColor: '#f0f2f5',
+        paddingTop: 50,
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: '#191919',
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        marginTop: 30,
-        marginBottom: 20,
+        alignItems: 'flex-start',
+        marginBottom: 24,
     },
     greeting: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#333',
+        fontSize: 22,
+        fontWeight: '600',
+        color: '#EBEBEB',
     },
-    logoutText: {
-        color: '#c62828',
-        fontWeight: 'bold',
+    date: {
+        fontSize: 13,
+        color: '#6B6B6B',
+        marginTop: 2,
     },
-    card: {
-        backgroundColor: '#fff',
-        padding: 20,
-        borderRadius: 12,
-        alignItems: 'center',
-        marginBottom: 20,
-        elevation: 3,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-    },
-    cardTitle: {
-        fontSize: 16,
-        color: '#666',
-        marginBottom: 5,
-    },
-    balance: {
-        fontSize: 32,
-        fontWeight: 'bold',
-    },
-    row: {
+    headerActions: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
-    miniCard: {
-        flex: 1,
-        backgroundColor: '#fff',
-        padding: 15,
-        borderRadius: 12,
         alignItems: 'center',
-        elevation: 2,
-        marginHorizontal: 5, // Ajuste para dar espaço entre os cards
     },
-    label: {
+    iconButton: {
+        marginLeft: 16,
+    },
+    profileIcon: {
+        fontSize: 18,
+    },
+    exitText: {
         fontSize: 14,
-        color: '#666',
+        color: '#EF5350',
+        fontWeight: '500',
     },
-    income: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#2e7d32',
-        marginTop: 5,
-    },
-    outcome: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#c62828',
-        marginTop: 5,
-    },
-    emptyStateContainer: { // Estilos novos para o caso de "Nenhuma transação"
+    balanceCard: {
+        backgroundColor: '#232323',
+        borderRadius: 12,
+        padding: 24,
         alignItems: 'center',
-        marginTop: 20,
-        padding: 20,
+        marginBottom: 24,
     },
-    emptyMessage: {
+    balanceLabel: {
+        fontSize: 13,
+        color: '#6B6B6B',
+        marginBottom: 8,
+    },
+    balanceValue: {
+        fontSize: 36,
+        fontWeight: '600',
+    },
+    positive: {
+        color: '#4CAF50',
+    },
+    negative: {
+        color: '#EF5350',
+    },
+    emptyState: {
+        alignItems: 'center',
+        paddingVertical: 40,
+    },
+    emptyIcon: {
+        fontSize: 48,
+        color: '#333333',
+        marginBottom: 16,
+    },
+    emptyTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#EBEBEB',
+        marginBottom: 8,
+    },
+    emptyText: {
+        fontSize: 14,
+        color: '#6B6B6B',
+        marginBottom: 24,
+    },
+    statsContainer: {
+        gap: 12,
+    },
+    statsRow: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    statCard: {
+        flex: 1,
+        backgroundColor: '#232323',
+        borderRadius: 12,
+        padding: 16,
+    },
+    statLabel: {
+        fontSize: 13,
+        color: '#6B6B6B',
+        marginBottom: 8,
+    },
+    statValuePositive: {
         fontSize: 16,
-        color: '#666',
-        marginBottom: 15,
+        fontWeight: '600',
+        color: '#4CAF50',
     },
-    buttonAdd: {
-        backgroundColor: '#2c76ffff',
-        paddingHorizontal: 20,
-        paddingVertical: 10,
+    statValueNegative: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#EF5350',
+    },
+    button: {
+        backgroundColor: '#2A2A2A',
         borderRadius: 8,
+        paddingVertical: 14,
+        paddingHorizontal: 24,
     },
     buttonText: {
-        color: '#fff',
-        fontWeight: 'bold',
-        textAlign: 'center'
+        color: '#EBEBEB',
+        fontSize: 14,
     },
-    profileText: {
-        color: '#1976D2', // Azul para diferenciar do vermelho
-        fontWeight: 'bold',
-    },
-    buttonContainer: {
-        marginTop: 20,
-        width: '50%',
-        alignSelf: 'center'
-    },
-    buttonTransactionsList: {
-        backgroundColor: '#ab5212ff',
-        paddingHorizontal: 20,
-        paddingVertical: 10,
+    buttonPrimary: {
+        backgroundColor: '#EBEBEB',
         borderRadius: 8,
-    }
+        paddingVertical: 14,
+        alignItems: 'center',
+        marginTop: 12,
+    },
+    buttonPrimaryText: {
+        color: '#191919',
+        fontSize: 15,
+        fontWeight: '600',
+    },
+    buttonSecondary: {
+        backgroundColor: '#232323',
+        borderRadius: 8,
+        paddingVertical: 14,
+        alignItems: 'center',
+    },
+    buttonSecondaryText: {
+        color: '#EBEBEB',
+        fontSize: 15,
+        fontWeight: '500',
+    },
 });
